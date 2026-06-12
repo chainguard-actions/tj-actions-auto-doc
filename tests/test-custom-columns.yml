@@ -1,0 +1,27 @@
+name: Test custom columns
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run auto-doc with custom columns
+        id: action
+        uses: .
+        with:
+          filename: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/sample-action.yml
+          output: /tmp/README-columns.md
+          bin_path: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/mock-auto-doc
+          version: v3.4.0
+          input_columns: |
+            Name
+            Description
+            Default
+          output_columns: |
+            Name
+            Description
+      - name: Assert action completed successfully
+        run: |
+          echo "Action completed with custom columns"
+          echo "PASS"

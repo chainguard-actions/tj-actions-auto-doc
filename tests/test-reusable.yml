@@ -1,0 +1,31 @@
+name: Test reusable workflow documentation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run auto-doc for reusable workflow
+        id: action
+        uses: .
+        with:
+          filename: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/sample-reusable.yml
+          output: /tmp/README-reusable.md
+          bin_path: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/mock-auto-doc
+          reusable: 'true'
+          reusable_input_columns: |
+            Name
+            Description
+            Required
+          reusable_output_columns: |
+            Name
+            Description
+          reusable_secret_columns: |
+            Name
+            Description
+            Required
+      - name: Assert action completed successfully
+        run: |
+          echo "Action completed for reusable workflow"
+          echo "PASS"

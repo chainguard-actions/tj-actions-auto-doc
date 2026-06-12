@@ -1,0 +1,26 @@
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        type: string
+    outputs:
+      result:
+        description: 'The deployment result'
+        value: ${{ jobs.deploy.outputs.result }}
+    secrets:
+      deploy-token:
+        description: 'Token for deployment'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.deploy.outputs.result }}
+    steps:
+      - name: Deploy
+        id: deploy
+        run: echo "result=success" >> $GITHUB_OUTPUT
+        shell: bash
