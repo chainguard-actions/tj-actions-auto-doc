@@ -1,0 +1,76 @@
+name: Test custom output file path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a minimal action.yml and custom output file
+        run: |
+          mkdir -p /tmp/custom-output-test
+          cat > /tmp/custom-output-test/action.yml <<'EOF'
+          name: custom-output-action
+          description: Testing custom output path
+          inputs:
+            token:
+              description: 'GitHub token'
+              required: true
+            environment:
+              description: 'Deployment environment'
+              required: false
+              default: 'staging'
+          outputs:
+            deployment-url:
+              description: 'The URL of the deployment'
+          runs:
+            using: composite
+            steps:
+              - run: echo "deploying"
+                shell: bash
+          EOF
+          cat > /tmp/custom-output-test/DOCS.md <<'EOF'
+          # Custom Output Test
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+          EOF
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/custom-output-test/action.yml
+          output: /tmp/custom-output-test/DOCS.md
+          markdown_links: 'false'
+          col_max_width: '500'
+          col_max_words: '10'
+
+      - name: Assert custom output file was created/updated
+        run: |
+          echo "=== DOCS.md contents ==="
+          cat /tmp/custom-output-test/DOCS.md
+          if ! grep -q "token" /tmp/custom-output-test/DOCS.md; then
+            echo "FAIL: DOCS.md does not contain 'token' input"
+            exit 1
+          fi
+          echo "PASS: Custom output file contains documentation"
+
+      - name: Assert environment input is documented
+        run: |
+          if ! grep -q "environment" /tmp/custom-output-test/DOCS.md; then
+            echo "FAIL: DOCS.md does not contain 'environment' input"
+            exit 1
+          fi
+          echo "PASS: DOCS.md contains 'environment' input documentation"
+
+      - name: Assert output is documented
+        run: |
+          if ! grep -q "deployment-url" /tmp/custom-output-test/DOCS.md; then
+            echo "FAIL: DOCS.md does not contain 'deployment-url' output"
+            exit 1
+          fi
+          echo "PASS: DOCS.md contains output documentation"

@@ -1,0 +1,56 @@
+name: Test version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a minimal action.yml and README for version test
+        run: |
+          mkdir -p /tmp/version-test
+          cat > /tmp/version-test/action.yml <<'EOF'
+          name: version-test-action
+          description: Testing version input
+          inputs:
+            my-input:
+              description: 'A test input'
+              required: true
+              default: 'hello'
+          outputs:
+            my-output:
+              description: 'A test output'
+          runs:
+            using: composite
+            steps:
+              - run: echo "hello"
+                shell: bash
+          EOF
+          cat > /tmp/version-test/README.md <<'EOF'
+          # Version Test Action
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+          EOF
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/version-test/action.yml
+          output: /tmp/version-test/README.md
+          markdown_links: 'false'
+          version: 'v3.6.0'
+
+      - name: Assert README.md was updated with input documentation
+        run: |
+          echo "=== README.md contents ==="
+          cat /tmp/version-test/README.md
+          if ! grep -q "my-input" /tmp/version-test/README.md; then
+            echo "FAIL: README.md does not contain 'my-input'"
+            exit 1
+          fi
+          echo "PASS: README.md contains input documentation"

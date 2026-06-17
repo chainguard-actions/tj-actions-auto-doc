@@ -1,0 +1,94 @@
+name: Test reusable workflow documentation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a reusable workflow file and README
+        run: |
+          mkdir -p /tmp/reusable-test/.github/workflows
+          cat > /tmp/reusable-test/.github/workflows/reusable.yml <<'EOF'
+          name: Reusable Workflow
+          on:
+            workflow_call:
+              inputs:
+                environment:
+                  description: 'Deployment environment'
+                  required: true
+                  type: string
+                dry-run:
+                  description: 'Whether to do a dry run'
+                  required: false
+                  type: boolean
+                  default: false
+              outputs:
+                deployment-url:
+                  description: 'The URL of the deployment'
+                  value: ${{ jobs.deploy.outputs.url }}
+              secrets:
+                token:
+                  description: 'GitHub token for deployment'
+                  required: true
+          jobs:
+            deploy:
+              runs-on: ubuntu-latest
+              outputs:
+                url: ${{ steps.deploy.outputs.url }}
+              steps:
+                - id: deploy
+                  run: echo "url=https://example.com" >> $GITHUB_OUTPUT
+                  shell: bash
+          EOF
+          cat > /tmp/reusable-test/README.md <<'EOF'
+          # Reusable Workflow
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+
+          <!-- AUTO-DOC-SECRET:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-SECRET:END -->
+          EOF
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/reusable-test/.github/workflows/reusable.yml
+          output: /tmp/reusable-test/README.md
+          markdown_links: 'false'
+          reusable: 'true'
+          reusable_input_columns: |
+            Input
+            Description
+            Required
+            Type
+          reusable_output_columns: |
+            Output
+            Description
+          reusable_secret_columns: |
+            Secret
+            Description
+            Required
+
+      - name: Assert README.md was updated with reusable workflow input documentation
+        run: |
+          echo "=== README.md contents ==="
+          cat /tmp/reusable-test/README.md
+          if ! grep -q "environment" /tmp/reusable-test/README.md; then
+            echo "FAIL: README.md does not contain 'environment' input"
+            exit 1
+          fi
+          echo "PASS: README.md contains reusable workflow input documentation"
+
+      - name: Assert README.md contains secret documentation
+        run: |
+          if ! grep -q "token" /tmp/reusable-test/README.md; then
+            echo "FAIL: README.md does not contain 'token' secret"
+            exit 1
+          fi
+          echo "PASS: README.md contains secret documentation"

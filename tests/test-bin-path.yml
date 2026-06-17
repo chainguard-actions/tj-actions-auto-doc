@@ -1,0 +1,69 @@
+name: Test bin_path input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install auto-doc binary manually
+        run: |
+          VERSION="v3.6.0"
+          OS="linux"
+          ARCH="amd64"
+          DOWNLOAD_URL="https://github.com/tj-actions/auto-doc/releases/download/${VERSION}/auto-doc_${OS}_${ARCH}.tar.gz"
+          mkdir -p /tmp/auto-doc-bin
+          curl -sSL "$DOWNLOAD_URL" -o /tmp/auto-doc-bin/auto-doc.tar.gz
+          tar -xzf /tmp/auto-doc-bin/auto-doc.tar.gz -C /tmp/auto-doc-bin
+          chmod +x /tmp/auto-doc-bin/auto-doc
+          echo "Binary installed at /tmp/auto-doc-bin/auto-doc"
+          /tmp/auto-doc-bin/auto-doc --version || true
+
+      - name: Create a minimal action.yml and README for bin_path test
+        run: |
+          mkdir -p /tmp/bin-path-test
+          cat > /tmp/bin-path-test/action.yml <<'EOF'
+          name: bin-path-test-action
+          description: Testing bin_path input
+          inputs:
+            my-input:
+              description: 'A test input'
+              required: true
+              default: 'hello'
+          outputs:
+            my-output:
+              description: 'A test output'
+          runs:
+            using: composite
+            steps:
+              - run: echo "hello"
+                shell: bash
+          EOF
+          cat > /tmp/bin-path-test/README.md <<'EOF'
+          # Bin Path Test Action
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+          EOF
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/bin-path-test/action.yml
+          output: /tmp/bin-path-test/README.md
+          markdown_links: 'false'
+          bin_path: /tmp/auto-doc-bin/auto-doc
+
+      - name: Assert README.md was updated with input documentation
+        run: |
+          echo "=== README.md contents ==="
+          cat /tmp/bin-path-test/README.md
+          if ! grep -q "my-input" /tmp/bin-path-test/README.md; then
+            echo "FAIL: README.md does not contain 'my-input'"
+            exit 1
+          fi
+          echo "PASS: README.md contains input documentation when using custom bin_path"

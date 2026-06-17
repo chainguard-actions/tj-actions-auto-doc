@@ -1,0 +1,63 @@
+name: Test basic usage - document action.yml
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a minimal action.yml to document
+        run: |
+          mkdir -p /tmp/test-action
+          cat > /tmp/test-action/action.yml <<'EOF'
+          name: my-test-action
+          description: A test action for auto-doc
+          inputs:
+            my-input:
+              description: 'A test input'
+              required: true
+              default: 'hello'
+          outputs:
+            my-output:
+              description: 'A test output'
+          runs:
+            using: composite
+            steps:
+              - run: echo "hello"
+                shell: bash
+          EOF
+          cat > /tmp/test-action/README.md <<'EOF'
+          # My Test Action
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+          EOF
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/test-action/action.yml
+          output: /tmp/test-action/README.md
+          markdown_links: 'false'
+
+      - name: Assert README.md was updated with input documentation
+        run: |
+          echo "=== README.md contents ==="
+          cat /tmp/test-action/README.md
+          if ! grep -q "my-input" /tmp/test-action/README.md; then
+            echo "FAIL: README.md does not contain 'my-input'"
+            exit 1
+          fi
+          echo "PASS: README.md contains input documentation"
+
+      - name: Assert README.md contains input description
+        run: |
+          if ! grep -q "A test input" /tmp/test-action/README.md; then
+            echo "FAIL: README.md does not contain input description"
+            exit 1
+          fi
+          echo "PASS: README.md contains input description"

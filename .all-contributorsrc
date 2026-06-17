@@ -1,0 +1,57 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "andreas-aman",
+      "name": "Andreas Åman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/118175695?v=4",
+      "profile": "https://github.com/andreas-aman",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "ViacheslavKudinov",
+      "name": "Viacheslav Kudinov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56436734?v=4",
+      "profile": "https://github.com/ViacheslavKudinov",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "looztra",
+      "name": "Christophe Furmaniak",
+      "avatar_url": "https://avatars.githubusercontent.com/u/246526?v=4",
+      "profile": "https://github.com/looztra",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "mw-root",
+      "name": "Mike W",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12434761?v=4",
+      "profile": "https://github.com/mw-root",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "auto-doc",
+  "projectOwner": "tj-actions",
+  "commitType": "docs"
+}

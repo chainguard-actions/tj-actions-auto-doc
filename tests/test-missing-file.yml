@@ -1,0 +1,26 @@
+name: Test missing file - should warn and exit 0
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure the target file does not exist
+        run: |
+          if [ -f /tmp/nonexistent-action.yml ]; then
+            rm /tmp/nonexistent-action.yml
+          fi
+          echo "Confirmed: /tmp/nonexistent-action.yml does not exist"
+
+      - id: autodoc
+        uses: .
+        with:
+          filename: /tmp/nonexistent-action.yml
+          output: /tmp/test-output-README.md
+
+      - name: Assert action completed without failure
+        run: |
+          echo "PASS: Action completed successfully (exit 0) when file is missing"
+          echo "The action should emit a warning but not fail"
