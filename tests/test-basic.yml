@@ -6,17 +6,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Run auto-doc with basic inputs
+
+      - name: Make fake binary executable
+        run: chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fake-auto-doc"
+
+      - name: Run auto-doc with fake binary
         id: action
         uses: .
         with:
-          filename: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/sample-action.yml
-          output: /tmp/README-basic.md
-          col_max_width: '1000'
-          col_max_words: '5'
-          markdown_links: 'true'
-          bin_path: ${{ github.workspace }}/actions/hardened/tj-actions--auto-doc/v3.4.0/tests/fixtures/mock-auto-doc
-      - name: Assert action completed successfully
+          filename: action.yml
+          output: /tmp/test-output-basic.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/fake-auto-doc
+
+      - name: Assert output file was created
         run: |
-          echo "Action completed successfully"
-          echo "PASS"
+          echo "Checking output file exists..."
+          if [ ! -f "/tmp/test-output-basic.md" ]; then
+            echo "FAIL: output file /tmp/test-output-basic.md was not created"
+            exit 1
+          fi
+          echo "PASS: output file exists"
+
+      - name: Assert output file contains documentation
+        run: |
+          CONTENT=$(cat /tmp/test-output-basic.md)
+          echo "Content: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "AUTO-DOC-INPUT"; then
+            echo "FAIL: output file does not contain expected documentation markers"
+            exit 1
+          fi
+          echo "PASS: output file contains documentation"

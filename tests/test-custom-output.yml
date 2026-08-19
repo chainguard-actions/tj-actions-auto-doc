@@ -1,0 +1,67 @@
+name: Test custom output path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test action.yml
+        run: |
+          mkdir -p /tmp/custom-output-test
+          cat > /tmp/custom-output-test/action.yml << 'EOF'
+          name: custom-output-action
+          description: Action for custom output test
+          inputs:
+            token:
+              description: 'GitHub token'
+              required: false
+              default: ''
+            environment:
+              description: 'Target environment'
+              required: true
+          runs:
+            using: composite
+            steps:
+              - run: echo "running"
+                shell: bash
+          EOF
+
+      - name: Create custom output file with auto-doc markers
+        run: |
+          cat > /tmp/custom-output-test/DOCS.md << 'EOF'
+          # Custom Docs
+
+          ## Inputs
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+          EOF
+
+      - name: Run auto-doc with custom output path
+        uses: .
+        with:
+          filename: /tmp/custom-output-test/action.yml
+          output: /tmp/custom-output-test/DOCS.md
+          repository: tj-actions/auto-doc
+          token: ${{ github.token }}
+
+      - name: Assert custom output file was created and contains documentation
+        run: |
+          echo "=== DOCS.md content ==="
+          cat /tmp/custom-output-test/DOCS.md
+          echo "=== End DOCS.md ==="
+          if [ ! -f /tmp/custom-output-test/DOCS.md ]; then
+            echo "FAIL: expected DOCS.md to exist"
+            exit 1
+          fi
+          if ! grep -q "environment" /tmp/custom-output-test/DOCS.md; then
+            echo "FAIL: expected 'environment' input to appear in DOCS.md"
+            exit 1
+          fi
+          if ! grep -q "token" /tmp/custom-output-test/DOCS.md; then
+            echo "FAIL: expected 'token' input to appear in DOCS.md"
+            exit 1
+          fi
+          echo "PASS: custom output file contains expected documentation"

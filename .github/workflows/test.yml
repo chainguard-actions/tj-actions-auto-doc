@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    name: snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@7b8cf10d4e4a01d4992d18a89f4d7dc5a3e6d6f4 # v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: GoReleaser
+        uses: goreleaser/goreleaser-action@5742e2a039330cbb23ebf35f046f814d4c6ff811 # v5
+        with:
+          version: latest
+          args: release --snapshot --clean
+
+      - name: Capture x86_64 (64-bit) Linux binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-linux-amd64
+          path: dist/auto-doc_linux_amd64/auto-doc
+
+      - name: Capture i386 (32-bit) Linux binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-linux-i386
+          path: dist/auto-doc_linux_386/auto-doc
+
+      - name: Capture arm64 (64-bit) Linux binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-linux-arm64
+          path: dist/auto-doc_linux_arm64/auto-doc
+
+      - name: Capture armv6 (32-bit) Linux binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-linux-armv6
+          path: dist/auto-doc_linux_arm_6/auto-doc
+
+      - name: Capture armv7 (32-bit) Linux binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-linux-armv7
+          path: dist/auto-doc_linux_arm_7/auto-doc
+
+      - name: Capture x86_64 (64-bit) Windows binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-windows-amd64
+          path: dist/auto-doc_windows_amd64/auto-doc.exe
+
+      - name: Capture i386 (32-bit) Windows binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-windows-i386
+          path: dist/auto-doc_windows_386/auto-doc.exe
+
+      - name: Capture arm64 (64-bit) Windows binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-windows-arm64
+          path: dist/auto-doc_windows_arm64/auto-doc.exe
+
+      - name: Capture armv7 (32-bit) Windows binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-windows-armv7
+          path: dist/auto-doc_windows_arm_7/auto-doc.exe
+
+      - name: Capture x86_64 (64-bit) MacOS binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-macos-amd64
+          path: dist/auto-doc_darwin_amd64/auto-doc
+
+      - name: Capture arm64 (64-bit) MacOS binary
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: auto-doc-macos-arm64
+          path: dist/auto-doc_darwin_arm64/auto-doc
+
+  test:
+    name: Test auto-doc
+    if: |
+      (
+        github.actor != 'dependabot[bot]' &&
+        github.actor != 'dependabot' &&
+        github.actor != 'github-actions[bot]'
+      )
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: github.event.pull_request.head.repo.owner.login == github.repository_owner
+        with:
+          fetch-depth: 0  # otherwise, you will fail to push refs to dest repo
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          ref: ${{ github.head_ref }}
+
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: github.event.pull_request.head.repo.owner.login != github.repository_owner
+        with:
+          fetch-depth: 0  # otherwise, you will fail to push refs to dest repo
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+
+      - name: Setup go
+        uses: actions/setup-go@7b8cf10d4e4a01d4992d18a89f4d7dc5a3e6d6f4 # v4
+        with:
+          go-version-file: 'go.mod'
+
+      # - name: Test action
+      #   uses: ./
+      #   if: github.event_name == 'push'
+
+      - name: Run build
+        run: make build
+
+      - name: Test action with bin_path
+        uses: ./
+        with:
+          bin_path: ./bin/auto_doc
+          use_code_blocks: true
+          use_major_version: true
+
+      - name: Test action with bin_path and reusable
+        uses: ./
+        with:
+          bin_path: ./bin/auto_doc
+          reusable: true
+          filename: test/reusable-action.yml
+          output: test/README-reusable-outputColumns.md
+          reusable_output_columns: |
+            Output
+            Value
+
+      - name: Run auto-doc using the test directory
+        run: make test
+
+      - name: Format markdown
+        uses: tj-actions/remark@10fc40701928cbafcc4a2d241679579d218144ff # v3
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@54e20d3c522fbeed99ebaf2e38a1eb33214c58ba # v16
+        id: verify-changed-files
+        with:
+          files: |
+            README.md
+            test/**
+
+      - name: Commit README changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true' && matrix.platform == 'ubuntu-latest'
+        env:
+          CHANGED_FILES: ${{ steps.verify-changed-files.outputs.changed_files }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add "$CHANGED_FILES"
+          git commit -m "Updated README."
+
+      - name: Push README changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true' && matrix.platform == 'ubuntu-latest'
+        uses: ad-m/github-push-action@881a6320fdb16eb5318c5054f31c218aec2b324c # master
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.PAT_TOKEN || github.token }}
+          branch: ${{ github.head_ref }}

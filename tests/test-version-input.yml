@@ -1,4 +1,4 @@
-name: Test custom column filtering
+name: Test version input
 on:
   workflow_dispatch:
 jobs:
@@ -7,14 +7,14 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create a column-aware fake binary
+      - name: Create a fake binary that records args
         run: |
-          cat > /tmp/fake-auto-doc-columns.sh << 'SCRIPT'
+          cat > /tmp/fake-auto-doc-version.sh << 'SCRIPT'
           #!/bin/sh
           # Fake auto-doc that records the args it received
           FILENAME="action.yml"
           OUTPUT="README.md"
-          ARGS_LOG="/tmp/auto-doc-args.txt"
+          ARGS_LOG="/tmp/auto-doc-version-args.txt"
 
           echo "$@" > "$ARGS_LOG"
 
@@ -27,43 +27,40 @@ jobs:
 
           cat > "$OUTPUT" << 'EOF'
           <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
-          | INPUT | TYPE | REQUIRED |
-          |-------|------|----------|
-          | filename | String | false |
+          | INPUT | TYPE | REQUIRED | DEFAULT | DESCRIPTION |
+          |-------|------|----------|---------|-------------|
+          | filename | String | false | action.yml | Path to the yaml file |
           <!-- AUTO-DOC-INPUT:END -->
           EOF
 
           echo "auto-doc: generated documentation from $FILENAME to $OUTPUT"
           exit 0
           SCRIPT
-          chmod +x /tmp/fake-auto-doc-columns.sh
+          chmod +x /tmp/fake-auto-doc-version.sh
 
-      - name: Run auto-doc with custom input columns
+      - name: Run auto-doc with version input
         id: action
         uses: .
         with:
           filename: action.yml
-          output: /tmp/test-output-columns.md
-          bin_path: /tmp/fake-auto-doc-columns.sh
-          input_columns: |
-            Input
-            Type
-            Required
+          output: /tmp/test-version-output.md
+          bin_path: /tmp/fake-auto-doc-version.sh
+          version: 'v3.4.0'
 
       - name: Assert output file was created
         run: |
-          if [ ! -f "/tmp/test-output-columns.md" ]; then
-            echo "FAIL: output file /tmp/test-output-columns.md was not created"
+          if [ ! -f "/tmp/test-version-output.md" ]; then
+            echo "FAIL: output file /tmp/test-version-output.md was not created"
             exit 1
           fi
           echo "PASS: output file exists"
 
-      - name: Assert args were passed correctly
+      - name: Assert documentation content was generated
         run: |
-          ARGS=$(cat /tmp/auto-doc-args.txt)
-          echo "Args received: $ARGS"
-          if ! echo "$ARGS" | grep -q "inputColumns"; then
-            echo "FAIL: --inputColumns argument was not passed to the binary"
+          CONTENT=$(cat /tmp/test-version-output.md)
+          echo "Content: $CONTENT"
+          if ! echo "$CONTENT" | grep -q "AUTO-DOC-INPUT"; then
+            echo "FAIL: expected AUTO-DOC-INPUT marker in output"
             exit 1
           fi
-          echo "PASS: --inputColumns argument was passed to the binary"
+          echo "PASS: documentation content was generated correctly"

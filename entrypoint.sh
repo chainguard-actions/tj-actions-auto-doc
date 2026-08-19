@@ -89,7 +89,7 @@ if [[ "$INPUT_USE_MAJOR_VERSION" == "true" ]]; then
 fi
 
 echo "::debug::Generating documentation using ${BIN_PATH}..."
-echo "::debug::Extra args: ${EXTRA_ARGS[*]+"${EXTRA_ARGS[*]}"}"
+echo "::debug::Extra args: ${EXTRA_ARGS[*]}"
 
 "$BIN_PATH" --filename="$INPUT_FILENAME" --output="$INPUT_OUTPUT" \
   --colMaxWidth="$INPUT_COL_MAX_WIDTH" --colMaxWords="$INPUT_COL_MAX_WORDS" \

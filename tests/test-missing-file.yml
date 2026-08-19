@@ -1,0 +1,33 @@
+name: Test missing input file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Make fake binary executable
+        run: chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fake-auto-doc"
+
+      - name: Run auto-doc with non-existent input file
+        id: action
+        uses: .
+        with:
+          filename: /tmp/nonexistent-file-that-does-not-exist.yml
+          output: /tmp/test-output-missing.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/fake-auto-doc
+
+      - name: Assert action completed without error (warning only)
+        run: |
+          echo "PASS: action completed successfully (exit 0) when file is missing"
+          # The action should have exited 0 with a warning, not failed
+          # If we reach this step, the action did not fail the workflow
+
+      - name: Assert output file was NOT created
+        run: |
+          if [ -f "/tmp/test-output-missing.md" ]; then
+            echo "FAIL: output file should not have been created for missing input"
+            exit 1
+          fi
+          echo "PASS: output file was not created (as expected)"
