@@ -7,40 +7,41 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install auto-doc binary manually
+      # Download the auto-doc binary manually so we can pass it via bin_path
+      - name: Download auto-doc binary
         run: |
-          VERSION="v3.6.0"
-          OS="linux"
-          ARCH="amd64"
-          DOWNLOAD_URL="https://github.com/tj-actions/auto-doc/releases/download/${VERSION}/auto-doc_${OS}_${ARCH}.tar.gz"
           mkdir -p /tmp/auto-doc-bin
-          curl -sSL "$DOWNLOAD_URL" -o /tmp/auto-doc-bin/auto-doc.tar.gz
+          # Download the auto-doc binary for linux amd64
+          curl -sSfL \
+            "https://github.com/tj-actions/auto-doc/releases/download/v3.6.0/auto-doc_Linux_x86_64.tar.gz" \
+            -o /tmp/auto-doc-bin/auto-doc.tar.gz
           tar -xzf /tmp/auto-doc-bin/auto-doc.tar.gz -C /tmp/auto-doc-bin
           chmod +x /tmp/auto-doc-bin/auto-doc
-          echo "Binary installed at /tmp/auto-doc-bin/auto-doc"
-          /tmp/auto-doc-bin/auto-doc --version || true
+          echo "Binary downloaded: $(/tmp/auto-doc-bin/auto-doc --version || true)"
 
-      - name: Create a minimal action.yml and README for bin_path test
+      # Create a minimal action.yml fixture and a README with the required markers
+      - name: Setup fixture files
         run: |
-          mkdir -p /tmp/bin-path-test
-          cat > /tmp/bin-path-test/action.yml <<'EOF'
-          name: bin-path-test-action
-          description: Testing bin_path input
+          mkdir -p /tmp/auto-doc-binpath-test
+          cat > /tmp/auto-doc-binpath-test/action.yml << 'EOF'
+          name: binpath-test-action
+          description: A test action for bin_path input
           inputs:
-            my-input:
-              description: 'A test input'
-              required: true
-              default: 'hello'
+            custom-input:
+              description: 'A custom test input'
+              required: false
+              default: 'world'
           outputs:
-            my-output:
-              description: 'A test output'
+            custom-output:
+              description: 'A custom test output'
           runs:
             using: composite
             steps:
               - run: echo "hello"
                 shell: bash
           EOF
-          cat > /tmp/bin-path-test/README.md <<'EOF'
+
+          cat > /tmp/auto-doc-binpath-test/README.md << 'EOF'
           # Bin Path Test Action
 
           <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
@@ -50,20 +51,29 @@ jobs:
           <!-- AUTO-DOC-OUTPUT:END -->
           EOF
 
-      - id: autodoc
+      - id: action
         uses: .
         with:
-          filename: /tmp/bin-path-test/action.yml
-          output: /tmp/bin-path-test/README.md
-          markdown_links: 'false'
+          filename: /tmp/auto-doc-binpath-test/action.yml
+          output: /tmp/auto-doc-binpath-test/README.md
           bin_path: /tmp/auto-doc-bin/auto-doc
+          markdown_links: 'false'
 
-      - name: Assert README.md was updated with input documentation
+      - name: Assert README was updated with input documentation
         run: |
-          echo "=== README.md contents ==="
-          cat /tmp/bin-path-test/README.md
-          if ! grep -q "my-input" /tmp/bin-path-test/README.md; then
-            echo "FAIL: README.md does not contain 'my-input'"
+          echo "=== README content ==="
+          cat /tmp/auto-doc-binpath-test/README.md
+          echo "=== End README ==="
+          if ! grep -q "custom-input" /tmp/auto-doc-binpath-test/README.md; then
+            echo "FAIL: expected 'custom-input' to appear in README.md"
             exit 1
           fi
-          echo "PASS: README.md contains input documentation when using custom bin_path"
+          echo "PASS: README contains input documentation when bin_path is specified"
+
+      - name: Assert README contains output documentation
+        run: |
+          if ! grep -q "custom-output" /tmp/auto-doc-binpath-test/README.md; then
+            echo "FAIL: expected 'custom-output' to appear in README.md"
+            exit 1
+          fi
+          echo "PASS: README contains output documentation when bin_path is specified"

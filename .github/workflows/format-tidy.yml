@@ -1,0 +1,79 @@
+name: Format & Tidy go.mod
+on:
+  pull_request:
+    paths:
+      - '**.go'
+      - '**.mod'
+      - 'Makefile'
+      - '.github/workflows/format-tidy.yml'
+    branches:
+      - 'main'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup-runs:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.owner.login == github.repository_owner
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@ee1451b869ba1e381729b3d40489997021f0d562 # v0.3.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.owner.login == github.repository_owner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - name: Setup go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: 'go.mod'
+
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Format code
+        run:
+          make format
+
+      - name: Tidy go.mod
+        run:
+          make tidy
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
+        id: verify-changed-files
+        with:
+          files: |
+            **/*.go
+            *.mod
+            *.sum
+
+      - name: Commit formatting changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        env:
+          CHANGED_FILES: ${{ steps.verify-changed-files.outputs.changed_files }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add cmd "$CHANGED_FILES"
+          git commit -m "Formatted code."
+
+      - name: Push formatting changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@881a6320fdb16eb5318c5054f31c218aec2b324c # master
+        with:
+          github_token: ${{ secrets.PAT_TOKEN || github.token }}
+          branch: ${{ github.head_ref }}

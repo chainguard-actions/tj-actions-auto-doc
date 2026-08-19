@@ -1,0 +1,62 @@
+name: Test use_code_blocks feature
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a minimal action.yml fixture and a README with the required markers
+      - name: Setup fixture files
+        run: |
+          mkdir -p /tmp/auto-doc-codeblocks-test
+          cat > /tmp/auto-doc-codeblocks-test/action.yml << 'EOF'
+          name: codeblocks-test-action
+          description: A test action for code blocks feature
+          inputs:
+            my-special-input:
+              description: 'Special input with a default value'
+              required: false
+              default: 'special-default-value'
+          runs:
+            using: composite
+            steps:
+              - run: echo "test"
+                shell: bash
+          EOF
+
+          cat > /tmp/auto-doc-codeblocks-test/README.md << 'EOF'
+          # Code Blocks Test Action
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          filename: /tmp/auto-doc-codeblocks-test/action.yml
+          output: /tmp/auto-doc-codeblocks-test/README.md
+          use_code_blocks: 'true'
+          markdown_links: 'false'
+
+      - name: Assert README was updated with input documentation
+        run: |
+          echo "=== README content ==="
+          cat /tmp/auto-doc-codeblocks-test/README.md
+          echo "=== End README ==="
+          if ! grep -q "my-special-input" /tmp/auto-doc-codeblocks-test/README.md; then
+            echo "FAIL: expected 'my-special-input' to appear in README.md"
+            exit 1
+          fi
+          echo "PASS: README contains input name"
+
+      - name: Assert README uses code blocks for values
+        run: |
+          # When use_code_blocks is true, values should be wrapped in backticks
+          if ! grep -q '`' /tmp/auto-doc-codeblocks-test/README.md; then
+            echo "FAIL: expected code blocks (backticks) in README.md when use_code_blocks=true"
+            exit 1
+          fi
+          echo "PASS: README contains code blocks"

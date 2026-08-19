@@ -7,16 +7,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create a minimal action.yml and README for version test
+      # Create a minimal action.yml fixture and a README with the required markers
+      - name: Setup fixture files
         run: |
-          mkdir -p /tmp/version-test
-          cat > /tmp/version-test/action.yml <<'EOF'
+          mkdir -p /tmp/auto-doc-version-test
+          cat > /tmp/auto-doc-version-test/action.yml << 'EOF'
           name: version-test-action
-          description: Testing version input
+          description: A test action for version input
           inputs:
             my-input:
               description: 'A test input'
-              required: true
+              required: false
               default: 'hello'
           outputs:
             my-output:
@@ -27,7 +28,8 @@ jobs:
               - run: echo "hello"
                 shell: bash
           EOF
-          cat > /tmp/version-test/README.md <<'EOF'
+
+          cat > /tmp/auto-doc-version-test/README.md << 'EOF'
           # Version Test Action
 
           <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
@@ -37,20 +39,29 @@ jobs:
           <!-- AUTO-DOC-OUTPUT:END -->
           EOF
 
-      - id: autodoc
+      - id: action
         uses: .
         with:
-          filename: /tmp/version-test/action.yml
-          output: /tmp/version-test/README.md
-          markdown_links: 'false'
+          filename: /tmp/auto-doc-version-test/action.yml
+          output: /tmp/auto-doc-version-test/README.md
           version: 'v3.6.0'
+          markdown_links: 'false'
 
-      - name: Assert README.md was updated with input documentation
+      - name: Assert README was updated with input documentation
         run: |
-          echo "=== README.md contents ==="
-          cat /tmp/version-test/README.md
-          if ! grep -q "my-input" /tmp/version-test/README.md; then
-            echo "FAIL: README.md does not contain 'my-input'"
+          echo "=== README content ==="
+          cat /tmp/auto-doc-version-test/README.md
+          echo "=== End README ==="
+          if ! grep -q "my-input" /tmp/auto-doc-version-test/README.md; then
+            echo "FAIL: expected 'my-input' to appear in README.md"
             exit 1
           fi
-          echo "PASS: README.md contains input documentation"
+          echo "PASS: README contains input documentation when version is specified"
+
+      - name: Assert README contains output documentation
+        run: |
+          if ! grep -q "my-output" /tmp/auto-doc-version-test/README.md; then
+            echo "FAIL: expected 'my-output' to appear in README.md"
+            exit 1
+          fi
+          echo "PASS: README contains output documentation when version is specified"

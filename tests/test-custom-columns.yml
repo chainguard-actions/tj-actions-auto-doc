@@ -1,0 +1,72 @@
+name: Test custom column selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a minimal action.yml fixture and a README with the required markers
+      - name: Setup fixture files
+        run: |
+          mkdir -p /tmp/auto-doc-columns-test
+          cat > /tmp/auto-doc-columns-test/action.yml << 'EOF'
+          name: columns-test-action
+          description: A test action for column filtering
+          inputs:
+            alpha-input:
+              description: 'Alpha input description'
+              required: true
+              default: 'alpha-default'
+          outputs:
+            beta-output:
+              description: 'Beta output description'
+          runs:
+            using: composite
+            steps:
+              - run: echo "test"
+                shell: bash
+          EOF
+
+          cat > /tmp/auto-doc-columns-test/README.md << 'EOF'
+          # Columns Test Action
+
+          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-INPUT:END -->
+
+          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
+          <!-- AUTO-DOC-OUTPUT:END -->
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          filename: /tmp/auto-doc-columns-test/action.yml
+          output: /tmp/auto-doc-columns-test/README.md
+          input_columns: |
+            Input
+            Description
+          output_columns: |
+            Output
+            Description
+          markdown_links: 'false'
+
+      - name: Assert README was updated with input documentation
+        run: |
+          echo "=== README content ==="
+          cat /tmp/auto-doc-columns-test/README.md
+          echo "=== End README ==="
+          if ! grep -q "alpha-input" /tmp/auto-doc-columns-test/README.md; then
+            echo "FAIL: expected 'alpha-input' to appear in README.md"
+            exit 1
+          fi
+          echo "PASS: README contains input name"
+
+      - name: Assert README contains output documentation
+        run: |
+          if ! grep -q "beta-output" /tmp/auto-doc-columns-test/README.md; then
+            echo "FAIL: expected 'beta-output' to appear in README.md"
+            exit 1
+          fi
+          echo "PASS: README contains output name"

@@ -1,4 +1,4 @@
-name: Test basic usage - document action.yml
+name: Test basic usage - auto-doc on action.yml
 on:
   workflow_dispatch:
 jobs:
@@ -7,16 +7,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create a minimal action.yml to document
+      # Create a minimal action.yml fixture and a README with the required markers
+      - name: Setup fixture files
         run: |
-          mkdir -p /tmp/test-action
-          cat > /tmp/test-action/action.yml <<'EOF'
+          mkdir -p /tmp/auto-doc-test
+          cat > /tmp/auto-doc-test/action.yml << 'EOF'
           name: my-test-action
           description: A test action for auto-doc
           inputs:
             my-input:
               description: 'A test input'
-              required: true
+              required: false
               default: 'hello'
           outputs:
             my-output:
@@ -27,7 +28,8 @@ jobs:
               - run: echo "hello"
                 shell: bash
           EOF
-          cat > /tmp/test-action/README.md <<'EOF'
+
+          cat > /tmp/auto-doc-test/README.md << 'EOF'
           # My Test Action
 
           <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
@@ -37,27 +39,30 @@ jobs:
           <!-- AUTO-DOC-OUTPUT:END -->
           EOF
 
-      - id: autodoc
+      - id: action
         uses: .
         with:
-          filename: /tmp/test-action/action.yml
-          output: /tmp/test-action/README.md
+          filename: /tmp/auto-doc-test/action.yml
+          output: /tmp/auto-doc-test/README.md
+          col_max_width: '1000'
+          col_max_words: '5'
           markdown_links: 'false'
 
-      - name: Assert README.md was updated with input documentation
+      - name: Assert README was updated with input documentation
         run: |
-          echo "=== README.md contents ==="
-          cat /tmp/test-action/README.md
-          if ! grep -q "my-input" /tmp/test-action/README.md; then
-            echo "FAIL: README.md does not contain 'my-input'"
+          echo "=== README content ==="
+          cat /tmp/auto-doc-test/README.md
+          echo "=== End README ==="
+          if ! grep -q "my-input" /tmp/auto-doc-test/README.md; then
+            echo "FAIL: expected 'my-input' to appear in README.md"
             exit 1
           fi
-          echo "PASS: README.md contains input documentation"
+          echo "PASS: README contains input documentation"
 
-      - name: Assert README.md contains input description
+      - name: Assert README contains input description
         run: |
-          if ! grep -q "A test input" /tmp/test-action/README.md; then
-            echo "FAIL: README.md does not contain input description"
+          if ! grep -q "A test input" /tmp/auto-doc-test/README.md; then
+            echo "FAIL: expected input description 'A test input' in README.md"
             exit 1
           fi
-          echo "PASS: README.md contains input description"
+          echo "PASS: README contains input description"
