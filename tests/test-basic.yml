@@ -1,68 +1,60 @@
-name: Test basic usage - auto-doc on action.yml
+name: Test basic usage - document action.yml
 on:
   workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Create a minimal action.yml fixture and a README with the required markers
-      - name: Setup fixture files
+      - name: Set up test files
         run: |
-          mkdir -p /tmp/auto-doc-test
-          cat > /tmp/auto-doc-test/action.yml << 'EOF'
-          name: my-test-action
-          description: A test action for auto-doc
-          inputs:
-            my-input:
-              description: 'A test input'
-              required: false
-              default: 'hello'
-          outputs:
-            my-output:
-              description: 'A test output'
-          runs:
-            using: composite
-            steps:
-              - run: echo "hello"
-                shell: bash
-          EOF
+          # Copy fixture files to workspace for the action to process
+          cp "$GITHUB_WORKSPACE/tests/fixtures/simple-action.yml" "$GITHUB_WORKSPACE/test-action.yml"
+          cp "$GITHUB_WORKSPACE/tests/fixtures/README-with-markers.md" "$GITHUB_WORKSPACE/test-README.md"
 
-          cat > /tmp/auto-doc-test/README.md << 'EOF'
-          # My Test Action
-
-          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
-          <!-- AUTO-DOC-INPUT:END -->
-
-          <!-- AUTO-DOC-OUTPUT:START - Do not remove or modify this section -->
-          <!-- AUTO-DOC-OUTPUT:END -->
-          EOF
-
-      - id: action
+      - id: autodoc
+        name: Run auto-doc on simple action
         uses: .
         with:
-          filename: /tmp/auto-doc-test/action.yml
-          output: /tmp/auto-doc-test/README.md
+          filename: test-action.yml
+          output: test-README.md
           col_max_width: '1000'
           col_max_words: '5'
           markdown_links: 'false'
 
-      - name: Assert README was updated with input documentation
+      - name: Assert README was updated with Inputs section
         run: |
           echo "=== README content ==="
-          cat /tmp/auto-doc-test/README.md
+          cat "$GITHUB_WORKSPACE/test-README.md"
           echo "=== End README ==="
-          if ! grep -q "my-input" /tmp/auto-doc-test/README.md; then
-            echo "FAIL: expected 'my-input' to appear in README.md"
-            exit 1
-          fi
-          echo "PASS: README contains input documentation"
 
-      - name: Assert README contains input description
-        run: |
-          if ! grep -q "A test input" /tmp/auto-doc-test/README.md; then
-            echo "FAIL: expected input description 'A test input' in README.md"
+          # Check that the AUTO-DOC-INPUT markers were filled in
+          if ! grep -q "AUTO-DOC-INPUT:START" "$GITHUB_WORKSPACE/test-README.md"; then
+            echo "FAIL: AUTO-DOC-INPUT:START marker not found"
             exit 1
           fi
-          echo "PASS: README contains input description"
+
+          # Check that input names appear in the README
+          if ! grep -q "my-input" "$GITHUB_WORKSPACE/test-README.md"; then
+            echo "FAIL: 'my-input' not found in README"
+            exit 1
+          fi
+
+          if ! grep -q "optional-input" "$GITHUB_WORKSPACE/test-README.md"; then
+            echo "FAIL: 'optional-input' not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated with input documentation"
+
+      - name: Assert README was updated with Outputs section
+        run: |
+          # Check that output names appear in the README
+          if ! grep -q "my-output" "$GITHUB_WORKSPACE/test-README.md"; then
+            echo "FAIL: 'my-output' not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated with output documentation"

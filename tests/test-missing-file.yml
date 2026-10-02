@@ -1,19 +1,20 @@
-name: Test missing file - graceful warning exit
+name: Test missing file - action warns and exits gracefully
 on:
   workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # When the input file does not exist, the action should exit 0 with a warning
-      - id: action
+      - id: autodoc
+        name: Run auto-doc with non-existent file
         uses: .
         with:
-          filename: /tmp/nonexistent-file-that-does-not-exist.yml
-          output: /tmp/README-missing-test.md
+          filename: non-existent-action.yml
+          output: test-README.md
 
-      - name: Assert action completed without failure
+      - name: Assert action succeeded (exits 0 with warning for missing file)
         run: |
-          echo "PASS: action completed successfully (exit 0) when file is missing"
+          echo "PASS: action exited 0 when input file was missing (warning only)"

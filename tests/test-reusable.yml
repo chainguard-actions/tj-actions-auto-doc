@@ -1,0 +1,59 @@
+name: Test reusable workflow documentation
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up test files
+        run: |
+          # Copy fixture files to workspace for the action to process
+          cp "$GITHUB_WORKSPACE/tests/fixtures/reusable-workflow.yml" "$GITHUB_WORKSPACE/test-reusable.yml"
+          cp "$GITHUB_WORKSPACE/tests/fixtures/README-reusable-markers.md" "$GITHUB_WORKSPACE/test-reusable-README.md"
+
+      - id: autodoc
+        name: Run auto-doc on reusable workflow
+        uses: .
+        with:
+          filename: test-reusable.yml
+          output: test-reusable-README.md
+          reusable: 'true'
+          markdown_links: 'false'
+
+      - name: Assert README was updated with reusable workflow inputs
+        run: |
+          echo "=== README content ==="
+          cat "$GITHUB_WORKSPACE/test-reusable-README.md"
+          echo "=== End README ==="
+
+          # Check that the AUTO-DOC-INPUT markers were filled in
+          if ! grep -q "AUTO-DOC-INPUT:START" "$GITHUB_WORKSPACE/test-reusable-README.md"; then
+            echo "FAIL: AUTO-DOC-INPUT:START marker not found"
+            exit 1
+          fi
+
+          # Check that reusable workflow input names appear in the README
+          if ! grep -q "environment" "$GITHUB_WORKSPACE/test-reusable-README.md"; then
+            echo "FAIL: 'environment' input not found in README"
+            exit 1
+          fi
+
+          if ! grep -q "dry-run" "$GITHUB_WORKSPACE/test-reusable-README.md"; then
+            echo "FAIL: 'dry-run' input not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated with reusable workflow input documentation"
+
+      - name: Assert README was updated with reusable workflow secrets
+        run: |
+          # Check that secret names appear in the README
+          if ! grep -q "deploy-token" "$GITHUB_WORKSPACE/test-reusable-README.md"; then
+            echo "FAIL: 'deploy-token' secret not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated with reusable workflow secret documentation"

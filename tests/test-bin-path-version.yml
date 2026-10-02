@@ -1,0 +1,59 @@
+name: Test custom bin_path and version inputs
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download auto-doc binary
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.bin"
+          VERSION="v3.6.0"
+          OS="linux"
+          ARCH="amd64"
+          URL="https://github.com/tj-actions/auto-doc/releases/download/${VERSION}/auto-doc_${OS}_${ARCH}.tar.gz"
+          echo "Downloading auto-doc from: $URL"
+          curl -sfL "$URL" -o /tmp/auto-doc.tar.gz
+          tar -xzf /tmp/auto-doc.tar.gz -C "$GITHUB_WORKSPACE/.bin" auto-doc
+          chmod +x "$GITHUB_WORKSPACE/.bin/auto-doc"
+          echo "Binary downloaded to: $GITHUB_WORKSPACE/.bin/auto-doc"
+          "$GITHUB_WORKSPACE/.bin/auto-doc" --help || true
+
+      - name: Set up test files
+        run: |
+          # Copy fixture files to workspace for the action to process
+          cp "$GITHUB_WORKSPACE/tests/fixtures/simple-action.yml" "$GITHUB_WORKSPACE/test-action-binpath.yml"
+          cp "$GITHUB_WORKSPACE/tests/fixtures/README-with-markers.md" "$GITHUB_WORKSPACE/test-README-binpath.md"
+
+      - id: autodoc
+        name: Run auto-doc with custom bin_path and version
+        uses: .
+        with:
+          filename: test-action-binpath.yml
+          output: test-README-binpath.md
+          bin_path: ${{ github.workspace }}/.bin/auto-doc
+          version: v3.6.0
+          markdown_links: 'false'
+
+      - name: Assert README was updated with Inputs section
+        run: |
+          echo "=== README content ==="
+          cat "$GITHUB_WORKSPACE/test-README-binpath.md"
+          echo "=== End README ==="
+
+          # Check that the AUTO-DOC-INPUT markers were filled in
+          if ! grep -q "AUTO-DOC-INPUT:START" "$GITHUB_WORKSPACE/test-README-binpath.md"; then
+            echo "FAIL: AUTO-DOC-INPUT:START marker not found"
+            exit 1
+          fi
+
+          # Check that input names appear in the README
+          if ! grep -q "my-input" "$GITHUB_WORKSPACE/test-README-binpath.md"; then
+            echo "FAIL: 'my-input' not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated using custom bin_path binary"

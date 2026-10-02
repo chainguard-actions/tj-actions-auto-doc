@@ -1,0 +1,46 @@
+name: Test output column filtering
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up test files
+        run: |
+          # Copy fixture files to workspace for the action to process
+          cp "$GITHUB_WORKSPACE/tests/fixtures/simple-action.yml" "$GITHUB_WORKSPACE/test-action-outcols.yml"
+          cp "$GITHUB_WORKSPACE/tests/fixtures/README-with-markers.md" "$GITHUB_WORKSPACE/test-README-outcols.md"
+
+      - id: autodoc
+        name: Run auto-doc with specific output columns
+        uses: .
+        with:
+          filename: test-action-outcols.yml
+          output: test-README-outcols.md
+          output_columns: |
+            Output
+            Description
+          markdown_links: 'false'
+
+      - name: Assert README was updated with output section
+        run: |
+          echo "=== README content ==="
+          cat "$GITHUB_WORKSPACE/test-README-outcols.md"
+          echo "=== End README ==="
+
+          # Check that the AUTO-DOC-OUTPUT markers were filled in
+          if ! grep -q "AUTO-DOC-OUTPUT:START" "$GITHUB_WORKSPACE/test-README-outcols.md"; then
+            echo "FAIL: AUTO-DOC-OUTPUT:START marker not found"
+            exit 1
+          fi
+
+          # Check that output names appear in the README
+          if ! grep -q "my-output" "$GITHUB_WORKSPACE/test-README-outcols.md"; then
+            echo "FAIL: 'my-output' not found in README"
+            exit 1
+          fi
+
+          echo "PASS: README was updated with filtered output column documentation"

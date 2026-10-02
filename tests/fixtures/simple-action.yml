@@ -1,0 +1,22 @@
+name: Simple Test Action
+description: A simple action for testing auto-doc
+author: test-author
+
+inputs:
+  my-input:
+    description: 'A test input'
+    required: true
+  optional-input:
+    description: 'An optional input'
+    required: false
+    default: 'default-value'
+
+outputs:
+  my-output:
+    description: 'A test output'
+
+runs:
+  using: 'composite'
+  steps:
+    - run: echo "hello"
+      shell: bash

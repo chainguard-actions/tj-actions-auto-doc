@@ -1,0 +1,39 @@
+name: Test sha and base_sha inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get commit SHAs for testing
+        id: shas
+        run: |
+          HEAD_SHA=$(git rev-parse HEAD)
+          # Use HEAD as sha and HEAD~1 (or HEAD if only one commit) as base_sha
+          PARENT_COUNT=$(git rev-list --count HEAD)
+          if [ "$PARENT_COUNT" -gt 1 ]; then
+            BASE_SHA=$(git rev-parse HEAD~1)
+          else
+            BASE_SHA=$(git rev-parse HEAD)
+          fi
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - id: action
+        uses: .
+        with:
+          sha: ${{ steps.shas.outputs.head_sha }}
+          base_sha: ${{ steps.shas.outputs.base_sha }}
+          files: |
+            **/*
+
+      - name: Assert action ran successfully
+        env:
+          ALL_CHANGED: ${{ steps.action.outputs.all_changed_and_modified_files }}
+        run: |
+          echo "all_changed_and_modified_files: $ALL_CHANGED"
+          echo "PASS: action completed with sha and base_sha inputs"
