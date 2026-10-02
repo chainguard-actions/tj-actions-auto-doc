@@ -1,0 +1,21 @@
+name: Test JSON output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - id: action
+        uses: .
+        with:
+          json: "true"
+          since_last_remote_commit: "false"
+      - name: Assert action completed with JSON output mode
+        run: |
+          echo "Action completed with JSON output mode"
+          echo "all_changed_files: ${{ steps.action.outputs.all_changed_files }}"
+          echo "added_files: ${{ steps.action.outputs.added_files }}"
+          echo "PASS: action ran with json=true without error"

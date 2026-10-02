@@ -1,0 +1,20 @@
+name: my-columns-test-action
+description: A test action for column filtering
+inputs:
+  my-input:
+    description: 'A test input'
+    required: true
+    default: 'hello'
+  extra-input:
+    description: 'An extra input'
+    required: false
+outputs:
+  my-output:
+    description: 'A test output'
+  extra-output:
+    description: 'An extra output'
+runs:
+  using: composite
+  steps:
+    - run: echo "hello"
+      shell: bash

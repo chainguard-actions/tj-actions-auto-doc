@@ -1,4 +1,4 @@
-name: Test version input
+name: Test version input is accepted
 on:
   workflow_dispatch:
 jobs:
@@ -7,60 +7,44 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Create a fake binary that records args
-        run: |
-          cat > /tmp/fake-auto-doc-version.sh << 'SCRIPT'
-          #!/bin/sh
-          # Fake auto-doc that records the args it received
-          FILENAME="action.yml"
-          OUTPUT="README.md"
-          ARGS_LOG="/tmp/auto-doc-version-args.txt"
+      - name: Reset README fixture to initial state
+        run: git checkout -- tests/fixtures/version/README.md
 
-          echo "$@" > "$ARGS_LOG"
-
-          for arg in "$@"; do
-            case "$arg" in
-              --filename=*) FILENAME="${arg#--filename=}" ;;
-              --output=*) OUTPUT="${arg#--output=}" ;;
-            esac
-          done
-
-          cat > "$OUTPUT" << 'EOF'
-          <!-- AUTO-DOC-INPUT:START - Do not remove or modify this section -->
-          | INPUT | TYPE | REQUIRED | DEFAULT | DESCRIPTION |
-          |-------|------|----------|---------|-------------|
-          | filename | String | false | action.yml | Path to the yaml file |
-          <!-- AUTO-DOC-INPUT:END -->
-          EOF
-
-          echo "auto-doc: generated documentation from $FILENAME to $OUTPUT"
-          exit 0
-          SCRIPT
-          chmod +x /tmp/fake-auto-doc-version.sh
-
-      - name: Run auto-doc with version input
-        id: action
+      - id: action
         uses: .
         with:
-          filename: action.yml
-          output: /tmp/test-version-output.md
-          bin_path: /tmp/fake-auto-doc-version.sh
-          version: 'v3.4.0'
+          filename: tests/fixtures/version/action.yml
+          output: tests/fixtures/version/README.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/version/fake-auto-doc
+          version: v3.4.0
+          markdown_links: 'false'
+          repository: tj-actions/auto-doc
 
-      - name: Assert output file was created
+      - name: Assert action succeeded
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          if [ ! -f "/tmp/test-version-output.md" ]; then
-            echo "FAIL: output file /tmp/test-version-output.md was not created"
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success, got '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: output file exists"
+          echo "PASS: action succeeded with version input"
 
-      - name: Assert documentation content was generated
+      - name: Assert README was updated with documentation
         run: |
-          CONTENT=$(cat /tmp/test-version-output.md)
-          echo "Content: $CONTENT"
-          if ! echo "$CONTENT" | grep -q "AUTO-DOC-INPUT"; then
-            echo "FAIL: expected AUTO-DOC-INPUT marker in output"
+          README="$GITHUB_WORKSPACE/tests/fixtures/version/README.md"
+          echo "README contents:"
+          cat "$README"
+          if grep -q "AUTO-DOC-INPUT:START" "$README"; then
+            echo "PASS: README contains auto-doc markers"
+          else
+            echo "FAIL: README does not contain auto-doc markers"
             exit 1
           fi
-          echo "PASS: documentation content was generated correctly"
+          if grep -q "my-input" "$README"; then
+            echo "PASS: README contains input documentation"
+          else
+            echo "FAIL: README does not contain input documentation"
+            exit 1
+          fi

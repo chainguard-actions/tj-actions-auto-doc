@@ -1,4 +1,4 @@
-name: Test basic usage - auto-doc on action.yml
+name: Test use_code_blocks flag is passed to binary
 on:
   workflow_dispatch:
 jobs:
@@ -8,16 +8,15 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Reset README fixture to initial state
-        run: git checkout -- tests/fixtures/basic/README.md
+        run: git checkout -- tests/fixtures/code-blocks/README.md
 
       - id: action
         uses: .
         with:
-          filename: tests/fixtures/basic/action.yml
-          output: tests/fixtures/basic/README.md
-          bin_path: ${{ github.workspace }}/tests/fixtures/basic/fake-auto-doc
-          col_max_width: '1000'
-          col_max_words: '5'
+          filename: tests/fixtures/code-blocks/action.yml
+          output: tests/fixtures/code-blocks/README.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/code-blocks/fake-auto-doc
+          use_code_blocks: 'true'
           markdown_links: 'false'
           repository: tj-actions/auto-doc
 
@@ -30,19 +29,13 @@ jobs:
             echo "FAIL: expected success, got '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: action succeeded"
+          echo "PASS: action succeeded with use_code_blocks=true"
 
-      - name: Assert README was updated with input documentation
+      - name: Assert README was updated with code block style
         run: |
-          README="$GITHUB_WORKSPACE/tests/fixtures/basic/README.md"
+          README="$GITHUB_WORKSPACE/tests/fixtures/code-blocks/README.md"
           echo "README contents:"
           cat "$README"
-          if grep -q "my-input" "$README"; then
-            echo "PASS: README contains input documentation"
-          else
-            echo "FAIL: README does not contain input documentation"
-            exit 1
-          fi
           if grep -q "AUTO-DOC-INPUT:START" "$README"; then
             echo "PASS: README contains auto-doc markers"
           else

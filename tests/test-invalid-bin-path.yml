@@ -1,0 +1,30 @@
+name: Test invalid bin_path - action errors when binary not found
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          filename: tests/fixtures/bin-path/action.yml
+          output: tests/fixtures/bin-path/README.md
+          bin_path: /nonexistent/path/to/auto-doc
+          markdown_links: 'false'
+          repository: tj-actions/auto-doc
+        continue-on-error: true
+
+      - name: Assert action failed (binary not found)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed when binary not found"
+          else
+            echo "FAIL: expected failure when binary not found, got '$OUTCOME'"
+            exit 1
+          fi

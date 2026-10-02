@@ -1,0 +1,55 @@
+name: Test input_columns and output_columns filtering
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Reset README fixture to initial state
+        run: git checkout -- tests/fixtures/columns/README.md
+
+      - id: action
+        uses: .
+        with:
+          filename: tests/fixtures/columns/action.yml
+          output: tests/fixtures/columns/README.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/columns/fake-auto-doc
+          input_columns: |
+            Input
+            Type
+          output_columns: |
+            Output
+            Description
+          markdown_links: 'false'
+          repository: tj-actions/auto-doc
+
+      - name: Assert action succeeded
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success, got '$OUTCOME'"
+            exit 1
+          fi
+          echo "PASS: action succeeded with input_columns and output_columns"
+
+      - name: Assert README was updated with filtered column documentation
+        run: |
+          README="$GITHUB_WORKSPACE/tests/fixtures/columns/README.md"
+          echo "README contents:"
+          cat "$README"
+          if grep -q "AUTO-DOC-INPUT:START" "$README"; then
+            echo "PASS: README contains auto-doc input markers"
+          else
+            echo "FAIL: README does not contain auto-doc input markers"
+            exit 1
+          fi
+          if grep -q "AUTO-DOC-OUTPUT:START" "$README"; then
+            echo "PASS: README contains auto-doc output markers"
+          else
+            echo "FAIL: README does not contain auto-doc output markers"
+            exit 1
+          fi

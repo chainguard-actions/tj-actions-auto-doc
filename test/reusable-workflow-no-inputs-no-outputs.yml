@@ -3,17 +3,23 @@ name: Reusable workflow example
 on:
   workflow_call:
 
+permissions: {}
+
 jobs:
   triage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: actions/labeler@v4
+      - uses: actions/labeler@ac9175f8a1f3625fd0d4fb234536d26811351594 # v4
         with:
           repo-token: ${{ secrets.token }}
           configuration-path: ${{ inputs.config-path }}
   example_job:
     name: Generate output
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       output1: ${{ steps.step1.outputs.firstword }}
       output2: ${{ steps.step2.outputs.secondword }}

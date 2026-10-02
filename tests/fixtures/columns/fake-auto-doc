@@ -1,0 +1,49 @@
+#!/bin/sh
+# Fake auto-doc binary: verifies --inputColumns and --outputColumns args are passed
+ARGS="$*"
+FILENAME=""
+OUTPUT=""
+INPUT_COLUMNS_FOUND=""
+OUTPUT_COLUMNS_FOUND=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --filename=*) FILENAME="${arg#--filename=}" ;;
+    --output=*) OUTPUT="${arg#--output=}" ;;
+    --inputColumns=*) INPUT_COLUMNS_FOUND="${arg#--inputColumns=}" ;;
+    --outputColumns=*) OUTPUT_COLUMNS_FOUND="${arg#--outputColumns=}" ;;
+  esac
+done
+
+echo "fake-auto-doc args: $ARGS"
+echo "inputColumns: $INPUT_COLUMNS_FOUND"
+echo "outputColumns: $OUTPUT_COLUMNS_FOUND"
+
+if [ -z "$INPUT_COLUMNS_FOUND" ]; then
+  echo "ERROR: --inputColumns was not passed to binary"
+  exit 1
+fi
+
+if [ -z "$OUTPUT_COLUMNS_FOUND" ]; then
+  echo "ERROR: --outputColumns was not passed to binary"
+  exit 1
+fi
+
+if [ -n "$OUTPUT" ]; then
+  cat > "$OUTPUT" <<MDEOF
+# Test Action
+
+<!-- AUTO-DOC-INPUT:START - Do not edit this section. -->
+| Input | Type |
+|-------|------|
+| my-input | String |
+<!-- AUTO-DOC-INPUT:END -->
+
+<!-- AUTO-DOC-OUTPUT:START - Do not edit this section. -->
+| Output | Description |
+|--------|-------------|
+| my-output | A test output |
+<!-- AUTO-DOC-OUTPUT:END -->
+MDEOF
+fi
+exit 0

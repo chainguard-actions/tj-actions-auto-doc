@@ -1,0 +1,26 @@
+#!/bin/sh
+USE_CODE_BLOCKS_FLAG=""
+OUTPUT=""
+for arg in "$@"; do
+  case "$arg" in
+    --useCodeBlocks) USE_CODE_BLOCKS_FLAG="true" ;;
+    --output=*) OUTPUT="${arg#--output=}" ;;
+  esac
+done
+echo "useCodeBlocks flag: $USE_CODE_BLOCKS_FLAG"
+if [ -n "$OUTPUT" ]; then
+  cat > "$OUTPUT" <<MDEOF
+# Test Action
+
+<!-- AUTO-DOC-INPUT:START - Do not edit this section. -->
+| Input | Description |
+|-------|-------------|
+| \`my-input\` | A test input |
+<!-- AUTO-DOC-INPUT:END -->
+MDEOF
+fi
+if [ "$USE_CODE_BLOCKS_FLAG" != "true" ]; then
+  echo "ERROR: --useCodeBlocks flag was not passed to binary"
+  exit 1
+fi
+exit 0

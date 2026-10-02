@@ -1,7 +1,6 @@
 name: Changed Files
 description: Get all Added, Copied, Modified, Deleted, Renamed, Type changed, Unmerged, Unknown files and directories.
 author: tj-actions
-
 inputs:
   separator:
     description: "Split character for output strings."
@@ -119,7 +118,6 @@ inputs:
     description: "The GitHub token to use for authentication."
     required: false
     default: ${{ github.token }}
-
 outputs:
   added_files:
     description: "Returns only files that are Added (A)."
@@ -137,7 +135,7 @@ outputs:
     description: "Returns only files that are Renamed (R)."
     value: ${{ steps.changed-files.outputs.renamed_files }}
   all_old_new_renamed_files:
-    description:   "Returns only files that are Renamed and list their old and new names. **NOTE:** This requires setting `include_all_old_new_renamed_files` to `true` (R)"
+    description: "Returns only files that are Renamed and list their old and new names. **NOTE:** This requires setting `include_all_old_new_renamed_files` to `true` (R)"
     value: ${{ steps.changed-files.outputs.all_old_new_renamed_files }}
   type_changed_files:
     description: "Returns only files that have their file type changed (T)."
@@ -184,11 +182,26 @@ outputs:
   other_deleted_files:
     description: "Returns all other deleted files not listed in the files input i.e. *a  combination of all deleted files (D)*"
     value: ${{ steps.changed-files.outputs.other_deleted_files }}
-
-
 runs:
   using: 'composite'
   steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - run: |
         echo "Test"
       id: test

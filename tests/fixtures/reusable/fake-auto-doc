@@ -1,0 +1,42 @@
+#!/bin/sh
+ARGS="$*"
+FILENAME=""
+OUTPUT=""
+REUSABLE_FLAG=""
+for arg in "$@"; do
+  case "$arg" in
+    --filename=*) FILENAME="${arg#--filename=}" ;;
+    --output=*) OUTPUT="${arg#--output=}" ;;
+    --reusable) REUSABLE_FLAG="true" ;;
+  esac
+done
+echo "fake-auto-doc args: $ARGS"
+echo "reusable flag: $REUSABLE_FLAG"
+if [ -n "$OUTPUT" ]; then
+  cat > "$OUTPUT" <<MDEOF
+# Reusable Workflow
+
+<!-- AUTO-DOC-INPUT:START - Do not edit this section. -->
+| Input | Description | Type | Required |
+|-------|-------------|------|----------|
+| environment | The environment to deploy to | String | true |
+<!-- AUTO-DOC-INPUT:END -->
+
+<!-- AUTO-DOC-OUTPUT:START - Do not edit this section. -->
+| Output | Description |
+|--------|-------------|
+| deploy-url | The deployed URL |
+<!-- AUTO-DOC-OUTPUT:END -->
+
+<!-- AUTO-DOC-SECRETS:START - Do not edit this section. -->
+| Secret | Description | Required |
+|--------|-------------|----------|
+| deploy-token | Token for deployment | true |
+<!-- AUTO-DOC-SECRETS:END -->
+MDEOF
+fi
+if [ "$REUSABLE_FLAG" != "true" ]; then
+  echo "ERROR: --reusable flag was not passed to binary"
+  exit 1
+fi
+exit 0

@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Mock auto-doc binary for testing
-# Accepts all auto-doc arguments and exits 0
-echo "mock-auto-doc called with args: $*"
-exit 0

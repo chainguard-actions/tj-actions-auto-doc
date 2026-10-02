@@ -1,0 +1,12 @@
+name: my-test-action
+description: A simple test action
+inputs:
+  my-input:
+    description: 'A test input'
+    required: false
+    default: 'hello'
+runs:
+  using: composite
+  steps:
+    - run: echo "hello"
+      shell: bash

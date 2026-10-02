@@ -1,4 +1,4 @@
-name: Test missing input file
+name: Test missing file - action warns and exits 0
 on:
   workflow_dispatch:
 jobs:
@@ -7,27 +7,31 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Make fake binary executable
-        run: chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fake-auto-doc"
-
-      - name: Run auto-doc with non-existent input file
-        id: action
-        uses: .
-        with:
-          filename: /tmp/nonexistent-file-that-does-not-exist.yml
-          output: /tmp/test-output-missing.md
-          bin_path: ${{ github.workspace }}/tests/fixtures/fake-auto-doc
-
-      - name: Assert action completed without error (warning only)
+      - name: Confirm the fixture file does not exist
         run: |
-          echo "PASS: action completed successfully (exit 0) when file is missing"
-          # The action should have exited 0 with a warning, not failed
-          # If we reach this step, the action did not fail the workflow
-
-      - name: Assert output file was NOT created
-        run: |
-          if [ -f "/tmp/test-output-missing.md" ]; then
-            echo "FAIL: output file should not have been created for missing input"
+          if [ -f "$GITHUB_WORKSPACE/tests/fixtures/nonexistent-action.yml" ]; then
+            echo "FAIL: file should not exist"
             exit 1
           fi
-          echo "PASS: output file was not created (as expected)"
+          echo "Confirmed: nonexistent-action.yml does not exist"
+
+      - id: action
+        uses: .
+        with:
+          filename: tests/fixtures/nonexistent-action.yml
+          output: tests/fixtures/nonexistent-README.md
+          bin_path: /nonexistent/path/to/auto-doc
+          markdown_links: 'false'
+          repository: tj-actions/auto-doc
+
+      - name: Assert action succeeded (missing file is a warning, not an error)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action exited 0 for missing file (warning only)"
+          else
+            echo "FAIL: expected success (exit 0) for missing file, got '$OUTCOME'"
+            exit 1
+          fi

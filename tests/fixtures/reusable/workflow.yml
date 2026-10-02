@@ -1,3 +1,4 @@
+name: My Reusable Workflow
 on:
   workflow_call:
     inputs:
@@ -5,22 +6,17 @@ on:
         description: 'The environment to deploy to'
         required: true
         type: string
-    outputs:
-      result:
-        description: 'The deployment result'
-        value: ${{ jobs.deploy.outputs.result }}
     secrets:
       deploy-token:
         description: 'Token for deployment'
         required: true
-
+    outputs:
+      deploy-url:
+        description: 'The deployed URL'
+        value: ${{ jobs.deploy.outputs.url }}
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    outputs:
-      result: ${{ steps.deploy.outputs.result }}
     steps:
-      - name: Deploy
-        id: deploy
-        run: echo "result=success" >> $GITHUB_OUTPUT
+      - run: echo "deploying"
         shell: bash

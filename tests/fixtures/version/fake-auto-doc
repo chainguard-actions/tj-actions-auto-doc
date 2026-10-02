@@ -1,0 +1,32 @@
+#!/bin/sh
+# Fake auto-doc binary for version test
+FILENAME=""
+OUTPUT=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --filename=*) FILENAME="${arg#--filename=}" ;;
+    --output=*) OUTPUT="${arg#--output=}" ;;
+  esac
+done
+
+echo "fake-auto-doc: filename=$FILENAME output=$OUTPUT"
+
+if [ -n "$OUTPUT" ]; then
+  cat > "$OUTPUT" <<MDEOF
+# Test Action
+
+<!-- AUTO-DOC-INPUT:START - Do not edit this section. -->
+| Input | Type | Required | Default |
+|-------|------|----------|---------|
+| my-input | String | true | hello |
+<!-- AUTO-DOC-INPUT:END -->
+
+<!-- AUTO-DOC-OUTPUT:START - Do not edit this section. -->
+| Output | Description |
+|--------|-------------|
+| my-output | A test output |
+<!-- AUTO-DOC-OUTPUT:END -->
+MDEOF
+fi
+exit 0

@@ -1,0 +1,32 @@
+name: My Reusable Columns Workflow
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        type: string
+      region:
+        description: 'The region to deploy to'
+        required: false
+        type: string
+    secrets:
+      deploy-token:
+        description: 'Token for deployment'
+        required: true
+      api-key:
+        description: 'API key for deployment'
+        required: false
+    outputs:
+      deploy-url:
+        description: 'The deployed URL'
+        value: ${{ jobs.deploy.outputs.url }}
+      deploy-id:
+        description: 'The deployment ID'
+        value: ${{ jobs.deploy.outputs.id }}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploying"
+        shell: bash

@@ -1,4 +1,4 @@
-name: Test reusable workflow documentation
+name: Test reusable workflow column filtering inputs
 on:
   workflow_dispatch:
 jobs:
@@ -8,15 +8,24 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Reset README fixture to initial state
-        run: git checkout -- tests/fixtures/reusable/README.md
+        run: git checkout -- tests/fixtures/reusable-columns/README.md
 
       - id: action
         uses: .
         with:
-          filename: tests/fixtures/reusable/workflow.yml
-          output: tests/fixtures/reusable/README.md
-          bin_path: ${{ github.workspace }}/tests/fixtures/reusable/fake-auto-doc
+          filename: tests/fixtures/reusable-columns/workflow.yml
+          output: tests/fixtures/reusable-columns/README.md
+          bin_path: ${{ github.workspace }}/tests/fixtures/reusable-columns/fake-auto-doc
           reusable: 'true'
+          reusable_input_columns: |
+            Input
+            Description
+          reusable_output_columns: |
+            Output
+            Description
+          reusable_secret_columns: |
+            Secret
+            Description
           markdown_links: 'false'
           repository: tj-actions/auto-doc
 
@@ -29,11 +38,11 @@ jobs:
             echo "FAIL: expected success, got '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: action succeeded with reusable=true"
+          echo "PASS: action succeeded with reusable column filtering inputs"
 
-      - name: Assert README contains reusable workflow documentation
+      - name: Assert README was updated with reusable workflow documentation
         run: |
-          README="$GITHUB_WORKSPACE/tests/fixtures/reusable/README.md"
+          README="$GITHUB_WORKSPACE/tests/fixtures/reusable-columns/README.md"
           echo "README contents:"
           cat "$README"
           if grep -q "AUTO-DOC-SECRETS:START" "$README"; then

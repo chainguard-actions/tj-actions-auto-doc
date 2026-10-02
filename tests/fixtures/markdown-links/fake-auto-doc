@@ -1,0 +1,26 @@
+#!/bin/sh
+MARKDOWN_LINKS_FLAG=""
+OUTPUT=""
+for arg in "$@"; do
+  case "$arg" in
+    --markdownLinks) MARKDOWN_LINKS_FLAG="true" ;;
+    --output=*) OUTPUT="${arg#--output=}" ;;
+  esac
+done
+echo "markdownLinks flag: $MARKDOWN_LINKS_FLAG"
+if [ -n "$OUTPUT" ]; then
+  cat > "$OUTPUT" <<MDEOF
+# Test Action
+
+<!-- AUTO-DOC-INPUT:START - Do not edit this section. -->
+| Input | Description |
+|-------|-------------|
+| [my-input](my-input) | A test input |
+<!-- AUTO-DOC-INPUT:END -->
+MDEOF
+fi
+if [ "$MARKDOWN_LINKS_FLAG" != "true" ]; then
+  echo "ERROR: --markdownLinks flag was not passed to binary"
+  exit 1
+fi
+exit 0

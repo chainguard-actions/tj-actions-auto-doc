@@ -1,0 +1,15 @@
+name: my-version-test-action
+description: A test action for version input
+inputs:
+  my-input:
+    description: 'A test input'
+    required: true
+    default: 'hello'
+outputs:
+  my-output:
+    description: 'A test output'
+runs:
+  using: composite
+  steps:
+    - run: echo "hello"
+      shell: bash
