@@ -84,7 +84,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Setup bin
       if: inputs.bin_path == ''
-      uses: tj-actions/setup-bin@cc810cdd7ca2809436d6cd0c03614b049e787071 # v1
+      uses: chainguard-actions/tj-actions-setup-bin@7cb919e9524ef0cc3c354c40363d01412cb8a92b # v1
       id: setup-bin-go
       with:
         repository-owner: tj-actions
